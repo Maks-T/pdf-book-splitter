@@ -1,0 +1,18 @@
+{
+  "input": "./books/english_7.pdf",
+  "output": "./output/english_7",
+  "sections": [
+    { "name": "01_(02-05)_Irregular_verbs_list", "start": 2, "end": 5 },
+    { "name": "02_(09-09)_Как_работать_с_учебным_пособием", "start": 9, "end": 9 },
+    { "name": "03_(10-33)_Unit_1_Appearance", "start": 10, "end": 33 },
+    { "name": "04_(34-55)_Unit_2_Character", "start": 34, "end": 55 },
+    { "name": "05_(56-87)_Unit_3_Shopping", "start": 56, "end": 87 },
+    { "name": "06_(88-115)_Unit_4_Friendship", "start": 88, "end": 115 },
+    { "name": "07_(116-143)_Unit_5_Sports", "start": 116, "end": 143 },
+    { "name": "08_(144-175)_Unit_6_Town_and_village", "start": 144, "end": 175 },
+    { "name": "09_(176-204)_Unit_7_A_tour_around_the_worlds_capitals", "start": 176, "end": 204 },
+    { "name": "10_(205-231)_Unit_8_Travelling_from_A_to_Z", "start": 205, "end": 231 },
+    { "name": "11_(232-263)_Unit_9_English", "start": 232, "end": 263 },
+    { "name": "12_(264-276)_Active_vocabulary", "start": 264, "end": 276 }
+  ]
+}

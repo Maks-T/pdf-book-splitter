@@ -4,17 +4,10 @@ const { PDFDocument } = require('pdf-lib');
 
 function resolveConfigPath(arg) {
   if (!arg) return null;
-
-  // 1. Прямой путь (например, ./configs/physics_7.json)
   if (fs.existsSync(arg)) return arg;
-
-  // 2. Имя без .json (например, configs/physics_7)
   if (fs.existsSync(`${arg}.json`)) return `${arg}.json`;
-
-  // 3. Просто имя из папки configs (например, physics_7)
   const inConfigsFolder = path.join('configs', arg.endsWith('.json') ? arg : `${arg}.json`);
   if (fs.existsSync(inConfigsFolder)) return inConfigsFolder;
-
   return null;
 }
 
@@ -27,31 +20,22 @@ async function main() {
   node index.js <имя_конфига>
 
 Примеры:
+  node index.js chemistry_7
   node index.js physics_7
-  node index.js configs/physics_7.json
         `);
-
-    if (fs.existsSync('configs')) {
-      const available = fs.readdirSync('configs').filter(f => f.endsWith('.json'));
-      if (available.length > 0) {
-        console.log('Доступные конфиги в папке configs/:');
-        available.forEach(c => console.log(`  - ${c.replace('.json', '')}`));
-      }
-    }
     return;
   }
 
   const configPath = resolveConfigPath(configArg);
-
   if (!configPath) {
     console.error(`❌ Ошибка: конфиг "${configArg}" не найден в папке configs/`);
     return;
   }
 
-  console.log(`\n Загружен конфиг: ${configPath}`);
+  console.log(`\n📄 Загружен конфиг: ${configPath}`);
   const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
-  const { input, output, sections } = config;
+  const { input, output, sections, offset = 0 } = config;
 
   if (!input || !fs.existsSync(input)) {
     console.error(`❌ Ошибка: исходный PDF файл не найден по пути -> ${input}`);
@@ -59,7 +43,7 @@ async function main() {
   }
 
   if (!sections || !Array.isArray(sections) || sections.length === 0) {
-    console.error(`❌ Ошибка: список параграфов (sections) пуст в ${configPath}`);
+    console.error(`❌ Ошибка: список sections пуст в ${configPath}`);
     return;
   }
 
@@ -68,25 +52,30 @@ async function main() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  console.log(` Читаем файл: ${input}`);
+  console.log(`📖 Читаем файл: ${input}`);
   const pdfBytes = fs.readFileSync(input);
   const srcDoc = await PDFDocument.load(pdfBytes);
   const totalPages = srcDoc.getPageCount();
 
-  console.log(` Всего страниц в книге: ${totalPages}`);
-  console.log(` Папка назначения: ${path.resolve(outputDir)}\n`);
+  console.log(`📊 Всего страниц в PDF: ${totalPages}`);
+  console.log(`⚙ Смещение страниц (offset): +${offset}`);
+  console.log(`📁 Папка назначения: ${path.resolve(outputDir)}\n`);
 
   for (const item of sections) {
-    const { name, start, end } = item;
+    const { name, start: bookStart, end: bookEnd } = item;
 
-    if (!start || !end || start < 1 || end > totalPages || start > end) {
-      console.warn(`⚠ Пропуск "${name}": некорректный диапазон страниц (${start}–${end})`);
+    // Реальные страницы в PDF с учетом смещения
+    const pdfStart = bookStart + offset;
+    const pdfEnd = bookEnd + offset;
+
+    if (pdfStart < 1 || pdfEnd > totalPages || pdfStart > pdfEnd) {
+      console.warn(`⚠ Пропуск "${name}": некорректные страницы (книга: ${bookStart}–${bookEnd}, PDF: ${pdfStart}–${pdfEnd})`);
       continue;
     }
 
     const newDoc = await PDFDocument.create();
     const pageIndices = [];
-    for (let p = start - 1; p < end; p++) {
+    for (let p = pdfStart - 1; p < pdfEnd; p++) {
       pageIndices.push(p);
     }
 
@@ -99,10 +88,10 @@ async function main() {
     const newPdfBytes = await newDoc.save();
     fs.writeFileSync(outputPath, newPdfBytes);
 
-    console.log(`✔ [OK] ${cleanName}.pdf (стр. PDF ${start}–${end})`);
+    console.log(`✔ [OK] ${cleanName}.pdf (в книге: стр. ${bookStart}–${bookEnd} | в PDF: стр. ${pdfStart}–${pdfEnd})`);
   }
 
-  console.log(`\n🎉 Все параграфы успешно сохранены в папку: ${path.resolve(outputDir)}`);
+  console.log(`\n🎉 Готово! Все файлы сохранены в папку: ${path.resolve(outputDir)}`);
 }
 
 main().catch(err => {
