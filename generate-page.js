@@ -95,7 +95,10 @@ const htmlContent = `<!DOCTYPE html>
       <div class="relative flex-1 max-w-md min-w-[240px]">
         <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
         <input id="searchInput" type="text" placeholder="Поиск темы, параграфа или слова..." 
-               class="w-full pl-9 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+               class="w-full pl-9 pr-9 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+        <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-2.5 top-2.5 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-500 hover:text-slate-700 flex items-center justify-center text-xs transition-colors" title="Очистить поиск">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
     </div>
   </header>
@@ -160,8 +163,36 @@ const htmlContent = `<!DOCTYPE html>
     const BOOKS = ${JSON.stringify(booksData)};
     let activeBookId = BOOKS[0]?.id || '';
 
+    function updateClearBtnVisibility() {
+      const searchInput = document.getElementById('searchInput');
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (!searchInput || !clearBtn) return;
+      if (searchInput.value.trim().length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+    }
+
+    function clearSearch() {
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+      }
+      updateClearBtnVisibility();
+      const book = BOOKS.find(b => b.id === activeBookId);
+      if (book) renderSections(book.sections);
+    }
+
     function selectBook(bookId) {
       activeBookId = bookId;
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput && searchInput.value) {
+        searchInput.value = '';
+      }
+      updateClearBtnVisibility();
+
       document.querySelectorAll('.book-nav-btn').forEach(btn => {
         btn.classList.remove('bg-blue-50', 'text-blue-700', 'font-semibold');
         btn.classList.add('text-slate-700');
@@ -190,10 +221,19 @@ const htmlContent = `<!DOCTYPE html>
       );
 
       if (filtered.length === 0) {
+        const rawSearch = document.getElementById('searchInput').value.trim();
+        const searchNotice = searchVal ? \`
+          <p class="text-xs text-slate-400 mt-1">По запросу «<span class="text-slate-600 font-medium">\${rawSearch}</span>» в этом учебнике тем нет</p>
+          <button onclick="clearSearch()" class="mt-3 px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate-left text-[11px]"></i> Сбросить поиск
+          </button>
+        \` : '';
+
         container.innerHTML = \`
-          <div class="py-12 text-center text-slate-400">
+          <div class="py-12 text-center text-slate-400 flex flex-col items-center justify-center">
             <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
-            <p class="text-sm">Ничего не найдено</p>
+            <p class="text-sm font-medium text-slate-600">Ничего не найдено</p>
+            \${searchNotice}
           </div>
         \`;
         return;
@@ -239,6 +279,7 @@ const htmlContent = `<!DOCTYPE html>
 
     // Поиск
     document.getElementById('searchInput').addEventListener('input', () => {
+      updateClearBtnVisibility();
       const book = BOOKS.find(b => b.id === activeBookId);
       if (book) renderSections(book.sections);
     });
